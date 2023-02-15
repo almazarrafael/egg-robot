@@ -27,9 +27,9 @@ float errSum;
 float lastErr;
 
 // PID tuning
-double kp = 25;
-double ki = 0.1 * sampleTime;
-double kd = 50 / sampleTime;
+double kp = 100; // Ku = 35
+double ki = 0.5 * sampleTime;
+double kd = 0.05 / sampleTime;
 
 bool fallDetected = false;
 
@@ -57,12 +57,13 @@ void setup() {
 }
 
 void loop() {
-  while (!fallDetected) {
+  while (true) {
     mpu.update();
     yRotation = mpu.getAngleY();
 
+    // Stops moving when the angle gets too steep and unrecovarable
     if (abs(yRotation) > 30) {
-      fallDetected = true;
+      motor_control(0);
       break;
     }
     
@@ -73,8 +74,6 @@ void loop() {
     
     motor_control(output);
   }
-  Serial.println("WTF");
-  motor_control(0);
 }
 
 int PID_compute (float input) {
@@ -109,6 +108,11 @@ int PID_compute (float input) {
 void motor_control(int val) {
     // Val should range from -255 to 255, but just in case
     val = constrain(val, -255, 255);
+
+    // Values less than 30 doesn't make the motor move
+    if (abs(val) < 30) {
+      val = 0;
+    }
     
     if (val > 0) {
         digitalWrite(in1, HIGH);
